@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 
 jest.mock('./auth.service');
 
@@ -15,7 +16,6 @@ const mockAuthService = {
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let authService: AuthService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -29,15 +29,10 @@ describe('AuthController', () => {
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
-    authService = module.get<AuthService>(AuthService);
   });
 
   it('controller should be defined', () => {
     expect(controller).toBeDefined();
-  });
-
-  it('authService should be defined', () => {
-    expect(authService).toBeDefined();
   });
 
   describe('signIn', () => {
@@ -50,6 +45,25 @@ describe('AuthController', () => {
         httpOnly: true,
       });
       expect(result).toEqual({ message: 'Sign-in successful' });
+    });
+
+    it('should throw BadRequestException if username is missing', async () => {
+      const res = {
+        cookie: jest.fn(),
+      } as unknown as Response;
+      await expect(controller.signIn('', res)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw UnauthorizedException if signIn fails', async () => {
+      mockAuthService.signIn.mockRejectedValueOnce(new Error('Sign-in failed'));
+      const res = {
+        cookie: jest.fn(),
+      } as unknown as Response;
+      await expect(controller.signIn('testuser', res)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 

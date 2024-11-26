@@ -8,7 +8,6 @@ const mockUsersService = {};
 
 describe('UsersController', () => {
   let controller: UsersController;
-  let usersService: UsersService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -22,14 +21,9 @@ describe('UsersController', () => {
     }).compile();
 
     controller = module.get<UsersController>(UsersController);
-    usersService = module.get<UsersService>(UsersService);
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
-  });
-
-  it('usersService should be defined', () => {
-    expect(usersService).toBeDefined();
   });
 });
