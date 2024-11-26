@@ -3,8 +3,19 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
 
+jest.mock('./auth.service');
+
+const mockAuthService = {
+  signIn: jest.fn().mockResolvedValue({
+    accessToken: 'test-token',
+    user: { id: 'user123', username: 'testuser' },
+  }),
+  signOut: jest.fn().mockReturnValue({ message: 'Sign-out successful' }),
+};
+
 describe('AuthController', () => {
   let controller: AuthController;
+  let authService: AuthService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -12,29 +23,29 @@ describe('AuthController', () => {
       providers: [
         {
           provide: AuthService,
-          useValue: {
-            signIn: jest.fn().mockReturnValue({ accessToken: 'test-token' }),
-            signOut: jest
-              .fn()
-              .mockReturnValue({ message: 'Sign-out successful' }),
-          },
+          useValue: mockAuthService,
         },
       ],
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
+    authService = module.get<AuthService>(AuthService);
   });
 
-  it('should be defined', () => {
+  it('controller should be defined', () => {
     expect(controller).toBeDefined();
   });
 
+  it('authService should be defined', () => {
+    expect(authService).toBeDefined();
+  });
+
   describe('signIn', () => {
-    it('should set a cookie and return a success message', () => {
+    it('should set a cookie and return a success message', async () => {
       const res = {
         cookie: jest.fn(),
       } as unknown as Response;
-      const result = controller.signIn('user123', res);
+      const result = await controller.signIn('testuser', res);
       expect(res.cookie).toHaveBeenCalledWith('jwt', 'test-token', {
         httpOnly: true,
       });

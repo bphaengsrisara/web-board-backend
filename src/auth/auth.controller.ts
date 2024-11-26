@@ -46,7 +46,7 @@ export class AuthController {
       },
     },
   })
-  signIn(
+  async signIn(
     @Body('username') username: string,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -54,7 +54,7 @@ export class AuthController {
       throw new BadRequestException('Username is required');
     }
     try {
-      const { accessToken } = this.authService.signIn(username);
+      const { accessToken } = await this.authService.signIn(username);
       res.cookie('jwt', accessToken, { httpOnly: true });
       return { message: 'Sign-in successful' };
     } catch (error) {
