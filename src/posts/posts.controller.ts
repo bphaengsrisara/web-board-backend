@@ -7,8 +7,8 @@ import {
   Param,
   Delete,
   UseGuards,
-  Res,
   Request,
+  Req,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -43,6 +43,15 @@ export class PostsController {
     return this.postsService.findAll();
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('my-posts')
+  @ApiOperation({ summary: 'Get all posts by the authenticated user' })
+  @ApiResponse({ status: 200, description: 'Return all posts by the user.' })
+  findAllMyPosts(@Req() req: AuthenticatedRequest) {
+    const { userId } = req.user;
+    return this.postsService.findAll(userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a post by ID' })
   @ApiResponse({ status: 200, description: 'Return a single post.' })
@@ -68,14 +77,5 @@ export class PostsController {
   @ApiResponse({ status: 404, description: 'Post not found.' })
   remove(@Param('id') id: string) {
     return this.postsService.remove(id);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('my-posts')
-  @ApiOperation({ summary: 'Get all posts by the authenticated user' })
-  @ApiResponse({ status: 200, description: 'Return all posts by the user.' })
-  findAllMyPosts(@Res() req: AuthenticatedRequest) {
-    const { userId } = req.user;
-    return this.postsService.findAllMyPosts(userId);
   }
 }

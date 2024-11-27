@@ -20,11 +20,7 @@ export class PostsService {
     });
   }
 
-  async findAll(): Promise<Post[]> {
-    return this.prisma.post.findMany();
-  }
-
-  async findAllMyPosts(authorId: string): Promise<Post[]> {
+  async findAll(authorId?: string): Promise<Post[]> {
     return this.prisma.post.findMany({
       where: { authorId },
     });
