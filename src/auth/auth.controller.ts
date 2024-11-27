@@ -4,13 +4,13 @@ import {
   Body,
   Res,
   HttpCode,
-  BadRequestException,
   UnauthorizedException,
   Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
 import { ApiTags, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -20,7 +20,7 @@ export class AuthController {
 
   @Post('sign-in')
   @HttpCode(200)
-  @ApiBody({ schema: { example: { username: 'user123' } } })
+  @ApiBody({ type: CreateUserDto })
   @ApiResponse({
     status: 200,
     description: 'Sign-in successful',
@@ -28,11 +28,11 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Username is required',
+    description: 'Bad Request',
     schema: {
       example: {
         statusCode: 400,
-        message: 'Username is required',
+        message: ['username should not be empty', 'username must be a string'],
         error: 'Bad Request',
       },
     },
@@ -49,12 +49,10 @@ export class AuthController {
     },
   })
   async signIn(
-    @Body('username') username: string,
+    @Body() createUserDto: CreateUserDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!username) {
-      throw new BadRequestException('Username is required');
-    }
+    const { username } = createUserDto;
     try {
       const { accessToken } = await this.authService.signIn(username);
       res.cookie('jwt', accessToken, { httpOnly: true });
