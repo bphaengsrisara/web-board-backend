@@ -1,4 +1,5 @@
 import { User } from '@prisma/client';
+import { Request } from 'express';
 
 export interface JwtPayload {
   sub: string;
@@ -13,4 +14,8 @@ export interface AuthenticatedUser {
 export interface AuthResponse {
   accessToken: string;
   user: User;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user: AuthenticatedUser;
 }
