@@ -6,6 +6,7 @@ import {
   HttpCode,
   BadRequestException,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
@@ -15,6 +16,7 @@ import { ApiTags, ApiResponse, ApiBody } from '@nestjs/swagger';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+  private readonly logger = new Logger(AuthController.name);
 
   @Post('sign-in')
   @HttpCode(200)
@@ -58,6 +60,7 @@ export class AuthController {
       res.cookie('jwt', accessToken, { httpOnly: true });
       return { message: 'Sign-in successful' };
     } catch (error) {
+      this.logger.error('Sign-in failed', error);
       throw new UnauthorizedException('Sign-in failed');
     }
   }
@@ -85,6 +88,7 @@ export class AuthController {
       res.clearCookie('jwt');
       return this.authService.signOut();
     } catch (error) {
+      this.logger.error('Sign-out failed', error);
       throw new UnauthorizedException('Sign-out failed');
     }
   }
