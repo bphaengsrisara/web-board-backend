@@ -2,7 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+import { CreateUserDto } from '../users/dto/create-user.dto';
 
 jest.mock('./auth.service');
 
@@ -40,20 +43,26 @@ describe('AuthController', () => {
       const res = {
         cookie: jest.fn(),
       } as unknown as Response;
-      const result = await controller.signIn('testuser', res);
+      const result = await controller.signIn({ username: 'testuser' }, res);
       expect(res.cookie).toHaveBeenCalledWith('jwt', 'test-token', {
         httpOnly: true,
       });
       expect(result).toEqual({ message: 'Sign-in successful' });
     });
 
+    it('should throw BadRequestException if username is empty', async () => {
+      const createUserDto = plainToInstance(CreateUserDto, { username: '' });
+      const errors = await validate(createUserDto);
+      expect(errors.length).not.toBe(0);
+      expect(JSON.stringify(errors)).toContain('username should not be empty');
+    });
+
     it('should throw BadRequestException if username is missing', async () => {
-      const res = {
-        cookie: jest.fn(),
-      } as unknown as Response;
-      await expect(controller.signIn('', res)).rejects.toThrow(
-        BadRequestException,
-      );
+      const createUserDto = plainToInstance(CreateUserDto, {});
+      const errors = await validate(createUserDto);
+      expect(errors.length).not.toBe(0);
+      expect(JSON.stringify(errors)).toContain('username should not be empty');
+      expect(JSON.stringify(errors)).toContain('username must be a string');
     });
 
     it('should throw UnauthorizedException if signIn fails', async () => {
@@ -61,9 +70,9 @@ describe('AuthController', () => {
       const res = {
         cookie: jest.fn(),
       } as unknown as Response;
-      await expect(controller.signIn('testuser', res)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        controller.signIn({ username: 'testuser' }, res),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
