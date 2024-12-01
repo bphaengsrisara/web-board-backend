@@ -56,4 +56,20 @@ describe('UsersService', () => {
       });
     });
   });
+
+  describe('findOneById', () => {
+    it('should find a user by id', async () => {
+      const result = await service.findOneById('user123');
+      expect(result).toEqual(mockUser);
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user123' },
+      });
+    });
+
+    it('should return null when user not found', async () => {
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValueOnce(null);
+      const result = await service.findOneById('nonexistent');
+      expect(result).toBeNull();
+    });
+  });
 });
