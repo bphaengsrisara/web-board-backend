@@ -11,6 +11,7 @@ import {
   Req,
   ForbiddenException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -23,6 +24,7 @@ import { AuthenticatedRequest, PostWithChildren } from 'src/interfaces';
 @ApiTags('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
+  private readonly logger = new Logger(PostsController.name);
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -30,28 +32,43 @@ export class PostsController {
   @ApiBody({ type: CreatePostDto })
   @ApiResponse({ status: 201, description: 'Post created successfully.' })
   @ApiResponse({ status: 400, description: 'Invalid input data.' })
-  create(
+  async create(
     @Request() req: AuthenticatedRequest,
     @Body() createPostDto: CreatePostDto,
   ) {
-    const { userId } = req.user;
-    return this.postsService.create(createPostDto, userId);
+    try {
+      const { userId } = req.user;
+      return await this.postsService.create(createPostDto, userId);
+    } catch (error) {
+      this.logger.error('Error creating post', error);
+      throw error;
+    }
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all posts' })
   @ApiResponse({ status: 200, description: 'Return all posts.' })
-  findAll() {
-    return this.postsService.findAll();
+  async findAll() {
+    try {
+      return await this.postsService.findAll();
+    } catch (error) {
+      this.logger.error('Error finding all posts', error);
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('my-posts')
   @ApiOperation({ summary: 'Get all posts by the authenticated user' })
   @ApiResponse({ status: 200, description: 'Return all posts by the user.' })
-  findAllMyPosts(@Req() req: AuthenticatedRequest) {
-    const { userId } = req.user;
-    return this.postsService.findAll(userId);
+  async findAllMyPosts(@Req() req: AuthenticatedRequest) {
+    try {
+      const { userId } = req.user;
+      return await this.postsService.findAll(userId);
+    } catch (error) {
+      this.logger.error('Error finding user posts', error);
+      throw error;
+    }
   }
 
   @Get(':id')
@@ -59,7 +76,12 @@ export class PostsController {
   @ApiResponse({ status: 200, description: 'Return a single post.' })
   @ApiResponse({ status: 404, description: 'Post not found.' })
   async findOne(@Param('id') id: string) {
-    return this.checkExists(id);
+    try {
+      return await this.checkExists(id);
+    } catch (error) {
+      this.logger.error(`Error finding post with id ${id}`, error);
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -73,9 +95,14 @@ export class PostsController {
     @Body() updatePostDto: UpdatePostDto,
     @Param('id') id: string,
   ) {
-    const post = await this.checkExists(id);
-    await this.checkOwnership(req, post);
-    return this.postsService.update(id, updatePostDto);
+    try {
+      const post = await this.checkExists(id);
+      await this.checkOwnership(req, post);
+      return await this.postsService.update(id, updatePostDto);
+    } catch (error) {
+      this.logger.error(`Error updating post with id ${id}`, error);
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -84,23 +111,41 @@ export class PostsController {
   @ApiResponse({ status: 200, description: 'Post deleted successfully.' })
   @ApiResponse({ status: 404, description: 'Post not found.' })
   async remove(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
-    const post = await this.checkExists(id);
-    await this.checkOwnership(req, post);
-    return this.postsService.remove(id);
+    try {
+      const post = await this.checkExists(id);
+      await this.checkOwnership(req, post);
+      return await this.postsService.remove(id);
+    } catch (error) {
+      this.logger.error(`Error deleting post with id ${id}`, error);
+      throw error;
+    }
   }
 
   async checkExists(postId: string): Promise<PostWithChildren> {
-    const post = await this.postsService.findOne(postId);
-    if (!post) {
-      throw new NotFoundException('Post not found');
+    try {
+      const post = await this.postsService.findOne(postId);
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+      return post;
+    } catch (error) {
+      this.logger.error(
+        `Error checking post existence with id ${postId}`,
+        error,
+      );
+      throw error;
     }
-    return post;
   }
 
   async checkOwnership(req: AuthenticatedRequest, post: PostWithChildren) {
-    const { userId } = req.user;
-    if (post?.authorId !== userId) {
-      throw new ForbiddenException('You do not own this post');
+    try {
+      const { userId } = req.user;
+      if (post?.authorId !== userId) {
+        throw new ForbiddenException('You do not own this post');
+      }
+    } catch (error) {
+      this.logger.error('Error checking post ownership', error);
+      throw error;
     }
   }
 }

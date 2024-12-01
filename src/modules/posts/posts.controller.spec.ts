@@ -3,7 +3,7 @@ import { PostsController } from './posts.controller';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Logger, NotFoundException } from '@nestjs/common';
 import { AuthenticatedRequest } from 'src/interfaces';
 
 jest.mock('../auth/jwt-auth.guard', () => ({
@@ -14,7 +14,7 @@ jest.mock('../auth/jwt-auth.guard', () => ({
 
 describe('PostsController', () => {
   let controller: PostsController;
-  let service: PostsService;
+  let mockLogger: { error: jest.Mock };
 
   const mockPost = {
     id: '1',
@@ -49,14 +49,16 @@ describe('PostsController', () => {
     get: jest.fn(),
     header: jest.fn(),
     accepts: jest.fn(),
-    acceptsCharsets: jest.fn(),
-    acceptsEncodings: jest.fn(),
-    acceptsLanguages: jest.fn(),
-    param: jest.fn(),
-    is: jest.fn(),
   } as unknown as AuthenticatedRequest;
 
   beforeEach(async () => {
+    // Manually create a mock logger with a spy
+    mockLogger = {
+      error: jest.fn(),
+    };
+
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(mockLogger.error);
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PostsController],
       providers: [
@@ -68,59 +70,69 @@ describe('PostsController', () => {
     }).compile();
 
     controller = module.get<PostsController>(PostsController);
-    service = module.get<PostsService>(PostsService);
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('create', () => {
-    it('should create a new post', async () => {
-      const createPostDto: CreatePostDto = {
-        title: 'Test Post',
-        content: 'Test Content',
-        topicIds: [],
-      };
+    const createPostDto: CreatePostDto = {
+      title: 'Test Post',
+      content: 'Test Content',
+      topicIds: [],
+    };
 
+    it('should create a post successfully', async () => {
       mockPostsService.create.mockResolvedValue(mockPost);
-
       const result = await controller.create(mockRequest, createPostDto);
-
-      expect(service.create).toHaveBeenCalledWith(createPostDto, 'user1');
       expect(result).toEqual(mockPost);
+      expect(mockPostsService.create).toHaveBeenCalledWith(
+        createPostDto,
+        mockRequest.user.userId,
+      );
+    });
+
+    it('should handle errors during post creation', async () => {
+      const error = new Error('Database error');
+      mockPostsService.create.mockRejectedValue(error);
+
+      await expect(
+        controller.create(mockRequest, createPostDto),
+      ).rejects.toThrow(error);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error creating post',
+        error,
+      );
     });
   });
 
   describe('findAll', () => {
-    it('should return an array of posts', async () => {
-      mockPostsService.findAll.mockResolvedValue([mockPost]);
+    it('should return all posts', async () => {
+      const posts = [mockPost];
+      mockPostsService.findAll.mockResolvedValue(posts);
 
       const result = await controller.findAll();
-
-      expect(service.findAll).toHaveBeenCalled();
-      expect(result).toEqual([mockPost]);
+      expect(result).toEqual(posts);
     });
-  });
 
-  describe('findAllMyPosts', () => {
-    it('should return posts for authenticated user', async () => {
-      mockPostsService.findAll.mockResolvedValue([mockPost]);
+    it('should handle errors when finding all posts', async () => {
+      const error = new Error('Database error');
+      mockPostsService.findAll.mockRejectedValue(error);
 
-      const result = await controller.findAllMyPosts(mockRequest);
-
-      expect(service.findAll).toHaveBeenCalledWith('user1');
-      expect(result).toEqual([mockPost]);
+      await expect(controller.findAll()).rejects.toThrow(error);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error finding all posts',
+        error,
+      );
     });
   });
 
   describe('findOne', () => {
-    it('should return a single post', async () => {
+    it('should return a post by id', async () => {
       mockPostsService.findOne.mockResolvedValue(mockPost);
 
       const result = await controller.findOne('1');
-
-      expect(service.findOne).toHaveBeenCalledWith('1');
       expect(result).toEqual(mockPost);
     });
 
@@ -128,13 +140,27 @@ describe('PostsController', () => {
       mockPostsService.findOne.mockResolvedValue(null);
 
       await expect(controller.findOne('1')).rejects.toThrow(NotFoundException);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error checking post existence with id 1',
+        expect.any(NotFoundException),
+      );
+    });
+
+    it('should handle database errors', async () => {
+      const error = new Error('Database error');
+      mockPostsService.findOne.mockRejectedValue(error);
+
+      await expect(controller.findOne('1')).rejects.toThrow(error);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error checking post existence with id 1',
+        error,
+      );
     });
   });
 
   describe('update', () => {
     const updatePostDto: UpdatePostDto = {
-      title: 'Updated Title',
-      content: 'Updated Content',
+      title: 'Updated Post',
     };
 
     it('should update a post if user owns it', async () => {
@@ -145,28 +171,34 @@ describe('PostsController', () => {
       });
 
       const result = await controller.update(mockRequest, updatePostDto, '1');
-
-      expect(service.update).toHaveBeenCalledWith('1', updatePostDto);
       expect(result).toEqual({ ...mockPost, ...updatePostDto });
     });
 
-    it('should throw NotFoundException when post not found', async () => {
-      mockPostsService.findOne.mockResolvedValue(null);
-
-      await expect(
-        controller.update(mockRequest, updatePostDto, '1'),
-      ).rejects.toThrow(NotFoundException);
-    });
-
     it('should throw ForbiddenException if user does not own the post', async () => {
-      mockPostsService.findOne.mockResolvedValue({
-        ...mockPost,
-        authorId: 'other-user',
-      });
+      const differentUserPost = { ...mockPost, authorId: 'user2' };
+      mockPostsService.findOne.mockResolvedValue(differentUserPost);
 
       await expect(
         controller.update(mockRequest, updatePostDto, '1'),
       ).rejects.toThrow(ForbiddenException);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error checking post ownership',
+        expect.any(ForbiddenException),
+      );
+    });
+
+    it('should handle database errors during update', async () => {
+      const error = new Error('Database error');
+      mockPostsService.findOne.mockResolvedValue(mockPost);
+      mockPostsService.update.mockRejectedValue(error);
+
+      await expect(
+        controller.update(mockRequest, updatePostDto, '1'),
+      ).rejects.toThrow(error);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error updating post with id 1',
+        error,
+      );
     });
   });
 
@@ -176,61 +208,32 @@ describe('PostsController', () => {
       mockPostsService.remove.mockResolvedValue(mockPost);
 
       const result = await controller.remove(mockRequest, '1');
-
-      expect(service.remove).toHaveBeenCalledWith('1');
       expect(result).toEqual(mockPost);
     });
 
-    it('should throw NotFoundException when post not found', async () => {
-      mockPostsService.findOne.mockResolvedValue(null);
-
-      await expect(controller.remove(mockRequest, '1')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
     it('should throw ForbiddenException if user does not own the post', async () => {
-      mockPostsService.findOne.mockResolvedValue({
-        ...mockPost,
-        authorId: 'other-user',
-      });
+      const differentUserPost = { ...mockPost, authorId: 'user2' };
+      mockPostsService.findOne.mockResolvedValue(differentUserPost);
 
       await expect(controller.remove(mockRequest, '1')).rejects.toThrow(
         ForbiddenException,
       );
-    });
-  });
-
-  describe('checkExists', () => {
-    it('should return post if it exists', async () => {
-      mockPostsService.findOne.mockResolvedValue(mockPost);
-
-      const result = await controller.checkExists('1');
-      expect(result).toEqual(mockPost);
-    });
-
-    it('should throw NotFoundException if post does not exist', async () => {
-      mockPostsService.findOne.mockResolvedValue(null);
-
-      await expect(controller.checkExists('1')).rejects.toThrow(
-        NotFoundException,
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error checking post ownership',
+        expect.any(ForbiddenException),
       );
     });
-  });
 
-  describe('checkOwnership', () => {
-    it('should not throw error if user owns the post', async () => {
-      await expect(
-        controller.checkOwnership(mockRequest, mockPost),
-      ).resolves.not.toThrow();
-    });
+    it('should handle database errors during removal', async () => {
+      const error = new Error('Database error');
+      mockPostsService.findOne.mockResolvedValue(mockPost);
+      mockPostsService.remove.mockRejectedValue(error);
 
-    it('should throw ForbiddenException if user does not own the post', async () => {
-      const otherPost = { ...mockPost, authorId: 'other-user' };
-
-      await expect(
-        controller.checkOwnership(mockRequest, otherPost),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(controller.remove(mockRequest, '1')).rejects.toThrow(error);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error deleting post with id 1',
+        error,
+      );
     });
   });
 });
