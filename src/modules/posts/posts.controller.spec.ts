@@ -4,7 +4,7 @@ import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { AuthenticatedRequest } from '../../interfaces/auth.interface';
+import { AuthenticatedRequest } from 'src/interfaces';
 
 jest.mock('../auth/jwt-auth.guard', () => ({
   JwtAuthGuard: jest.fn().mockImplementation(() => ({

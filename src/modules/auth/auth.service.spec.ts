@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import { AuthResponse } from '../../interfaces/auth.interface';
+import { AuthResponse } from 'src/interfaces';
 import { User } from '@prisma/client';
 
 const mockUser: User = {
