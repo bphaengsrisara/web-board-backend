@@ -9,13 +9,16 @@ import {
   UseGuards,
   Request,
   Req,
+  ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../interfaces/auth.interface';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { PostWithChildren } from 'src/interfaces';
 
 @Controller('posts')
 @ApiTags('posts')
@@ -56,8 +59,8 @@ export class PostsController {
   @ApiOperation({ summary: 'Get a post by ID' })
   @ApiResponse({ status: 200, description: 'Return a single post.' })
   @ApiResponse({ status: 404, description: 'Post not found.' })
-  findOne(@Param('id') id: string) {
-    return this.postsService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    return this.checkExists(id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -66,7 +69,13 @@ export class PostsController {
   @ApiBody({ type: UpdatePostDto })
   @ApiResponse({ status: 200, description: 'Post updated successfully.' })
   @ApiResponse({ status: 404, description: 'Post not found.' })
-  update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
+  async update(
+    @Req() req: AuthenticatedRequest,
+    @Body() updatePostDto: UpdatePostDto,
+    @Param('id') id: string,
+  ) {
+    const post = await this.checkExists(id);
+    await this.checkOwnership(req, post);
     return this.postsService.update(id, updatePostDto);
   }
 
@@ -75,7 +84,24 @@ export class PostsController {
   @ApiOperation({ summary: 'Delete a post by ID' })
   @ApiResponse({ status: 200, description: 'Post deleted successfully.' })
   @ApiResponse({ status: 404, description: 'Post not found.' })
-  remove(@Param('id') id: string) {
+  async remove(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    const post = await this.checkExists(id);
+    await this.checkOwnership(req, post);
     return this.postsService.remove(id);
+  }
+
+  async checkExists(postId: string): Promise<PostWithChildren> {
+    const post = await this.postsService.findOne(postId);
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+    return post;
+  }
+
+  async checkOwnership(req: AuthenticatedRequest, post: PostWithChildren) {
+    const { userId } = req.user;
+    if (post?.authorId !== userId) {
+      throw new ForbiddenException('You do not own this post');
+    }
   }
 }

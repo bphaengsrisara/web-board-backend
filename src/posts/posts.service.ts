@@ -15,9 +15,11 @@ export class PostsService {
   ): Promise<PostWithChildren | null> {
     const { title, content, topicIds } = createPostDto;
 
-    const validTopics = await this.prisma.topic.findMany({
-      where: { id: { in: topicIds } },
-    });
+    const validTopics = topicIds
+      ? await this.prisma.topic.findMany({
+          where: { id: { in: topicIds } },
+        })
+      : [];
 
     const createdPost = await this.prisma.post.create({
       data: {
@@ -69,25 +71,31 @@ export class PostsService {
   ): Promise<PostWithChildren | null> {
     const { title, content, topicIds } = updatePostDto;
 
-    const validTopics = await this.prisma.topic.findMany({
-      where: { id: { in: topicIds } },
-    });
+    const validTopics = topicIds
+      ? await this.prisma.topic.findMany({
+          where: { id: { in: topicIds } },
+        })
+      : [];
 
     await this.prisma.post.update({
       where: { id },
       data: {
         title,
         content,
-        topics: {
-          // delete all existing topics
-          deleteMany: {},
-          // then re-create new topics
-          create: validTopics?.map((topic) => ({
-            topic: {
-              connect: { id: topic.id },
-            },
-          })),
-        },
+        topics:
+          // if no topicIds were provided that mean user dont want to update topics
+          topicIds
+            ? {
+                // delete all existing topics
+                deleteMany: {},
+                // then re-create new topics
+                create: validTopics?.map((topic) => ({
+                  topic: {
+                    connect: { id: topic.id },
+                  },
+                })),
+              }
+            : {},
       },
     });
 
