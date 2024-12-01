@@ -16,7 +16,7 @@ import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { AuthenticatedRequest } from '../interfaces/auth.interface';
+import { AuthenticatedRequest } from '../../interfaces/auth.interface';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { PostWithChildren } from 'src/interfaces';
 

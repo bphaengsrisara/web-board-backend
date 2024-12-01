@@ -2,12 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import { AuthResponse } from '../interfaces/auth.interface';
+import { AuthResponse } from '../../interfaces/auth.interface';
 import { User } from '@prisma/client';
 
 const mockUser: User = {
   id: 'user123',
   username: 'testuser',
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 
 describe('AuthService', () => {

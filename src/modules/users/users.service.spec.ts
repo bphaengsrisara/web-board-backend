@@ -1,12 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { User } from '@prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
 
 const mockUser: User = {
   id: 'user123',
   username: 'testuser',
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 
 const mockPrismaService = {
