@@ -55,7 +55,7 @@ export class AuthController {
     const { username } = createUserDto;
     try {
       const { accessToken } = await this.authService.signIn(username);
-      res.cookie('jwt', accessToken, { httpOnly: true });
+      res.cookie('access_token', accessToken, { httpOnly: true });
       return { message: 'Sign-in successful' };
     } catch (error) {
       this.logger.error('Sign-in failed', error);
@@ -83,7 +83,7 @@ export class AuthController {
   })
   signOut(@Res({ passthrough: true }) res: Response) {
     try {
-      res.clearCookie('jwt');
+      res.clearCookie('access_token');
       return this.authService.signOut();
     } catch (error) {
       this.logger.error('Sign-out failed', error);

@@ -44,7 +44,7 @@ describe('AuthController', () => {
         cookie: jest.fn(),
       } as unknown as Response;
       const result = await controller.signIn({ username: 'testuser' }, res);
-      expect(res.cookie).toHaveBeenCalledWith('jwt', 'test-token', {
+      expect(res.cookie).toHaveBeenCalledWith('access_token', 'test-token', {
         httpOnly: true,
       });
       expect(result).toEqual({ message: 'Sign-in successful' });
@@ -82,7 +82,7 @@ describe('AuthController', () => {
         clearCookie: jest.fn(),
       } as unknown as Response;
       const result = controller.signOut(res);
-      expect(res.clearCookie).toHaveBeenCalledWith('jwt');
+      expect(res.clearCookie).toHaveBeenCalledWith('access_token');
       expect(result).toEqual({ message: 'Sign-out successful' });
     });
   });
