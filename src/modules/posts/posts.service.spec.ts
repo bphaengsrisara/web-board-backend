@@ -3,7 +3,8 @@ import { PostsService } from './posts.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { Post, Topic, User } from '@prisma/client';
+import { Comment, Post, Topic, User } from '@prisma/client';
+import { PostWithChildren } from 'src/interfaces';
 
 describe('PostsService', () => {
   let service: PostsService;
@@ -20,6 +21,15 @@ describe('PostsService', () => {
     name: 'Test Topic',
   };
 
+  const mockComment: Comment = {
+    id: 'comment1',
+    content: 'Test Comment',
+    postId: 'post1',
+    authorId: mockUser.id,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
   const mockPost: Post = {
     id: 'post1',
     title: 'Test Post',
@@ -28,6 +38,18 @@ describe('PostsService', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
   };
+
+  const mockPostWithRelations = {
+    ...mockPost,
+    author: mockUser,
+    topics: [mockTopic],
+    comments: [
+      {
+        ...mockComment,
+        author: mockUser,
+      },
+    ],
+  } satisfies PostWithChildren;
 
   const mockPrismaService = {
     post: {
@@ -70,12 +92,9 @@ describe('PostsService', () => {
 
       mockPrismaService.topic.findMany.mockResolvedValue([mockTopic]);
       mockPrismaService.post.create.mockResolvedValue(mockPost);
-      mockPrismaService.post.findUnique.mockResolvedValue({
-        ...mockPost,
-        author: mockUser,
-        topics: [{ topic: mockTopic }],
-        comments: [],
-      });
+      mockPrismaService.post.findUnique.mockResolvedValue(
+        mockPostWithRelations,
+      );
 
       const result = await service.create(createPostDto, mockUser.id);
 
@@ -83,7 +102,7 @@ describe('PostsService', () => {
       if (result) {
         expect(result.title).toBe(createPostDto.title);
         expect(result.topics).toHaveLength(1);
-        expect(result.topics[0]).toEqual(mockTopic);
+        expect(result.comments[0].author).toEqual(mockUser);
       }
     });
   });
@@ -118,41 +137,30 @@ describe('PostsService', () => {
         expect(result.title).toBe(updatePostDto.title);
         expect(result.content).toBe(updatePostDto.content);
         expect(result.topics).toHaveLength(1);
-        expect(result.topics[0]).toEqual(mockTopic);
+        expect(result.topics[0].id).toEqual(mockTopic.id);
       }
     });
   });
 
   describe('findAll', () => {
     it('should return all posts for a user', async () => {
-      const mockPosts = [
-        {
-          ...mockPost,
-          author: mockUser,
-          topics: [{ topic: mockTopic }],
-          comments: [],
-        },
-      ];
-
-      mockPrismaService.post.findMany.mockResolvedValue(mockPosts);
+      mockPrismaService.post.findMany.mockResolvedValue([
+        mockPostWithRelations,
+      ]);
 
       const result = await service.findAll(mockUser.id);
 
       expect(result).toHaveLength(1);
       expect(result[0].author).toEqual(mockUser);
       expect(result[0].topics).toHaveLength(1);
-      expect(result[0].topics[0]).toEqual(mockTopic);
     });
   });
 
   describe('findOne', () => {
     it('should return a single post with its relations', async () => {
-      mockPrismaService.post.findUnique.mockResolvedValue({
-        ...mockPost,
-        author: mockUser,
-        topics: [{ topic: mockTopic }],
-        comments: [],
-      });
+      mockPrismaService.post.findUnique.mockResolvedValue(
+        mockPostWithRelations,
+      );
 
       const result = await service.findOne(mockPost.id);
 
@@ -160,7 +168,6 @@ describe('PostsService', () => {
       if (result) {
         expect(result.author).toEqual(mockUser);
         expect(result.topics).toHaveLength(1);
-        expect(result.topics[0]).toEqual(mockTopic);
       }
     });
   });

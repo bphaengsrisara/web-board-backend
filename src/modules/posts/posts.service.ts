@@ -116,5 +116,9 @@ const postInclude = {
       topic: true,
     },
   },
-  comments: true,
+  comments: {
+    include: {
+      author: true,
+    },
+  },
 } satisfies Prisma.PostInclude;
