@@ -64,6 +64,9 @@ export class PostsService {
         }),
       },
       include: postInclude,
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
     return posts.map((post) => ({

@@ -152,8 +152,9 @@ describe('PostsService', () => {
       expect(result[0].author).toEqual(mockUser);
       expect(result[0].topics).toHaveLength(1);
       expect(mockPrismaService.post.findMany).toHaveBeenCalledWith({
-        where: {},
+        where: { authorId: undefined },
         include: expect.any(Object),
+        orderBy: { createdAt: 'desc' },
       });
     });
 
@@ -168,6 +169,7 @@ describe('PostsService', () => {
       expect(mockPrismaService.post.findMany).toHaveBeenCalledWith({
         where: { authorId: 'user1' },
         include: expect.any(Object),
+        orderBy: { createdAt: 'desc' },
       });
     });
 
@@ -181,6 +183,7 @@ describe('PostsService', () => {
       expect(result[0].topics).toHaveLength(1);
       expect(mockPrismaService.post.findMany).toHaveBeenCalledWith({
         where: {
+          authorId: undefined,
           topics: {
             some: {
               topicId: 'topic1',
@@ -188,6 +191,7 @@ describe('PostsService', () => {
           },
         },
         include: expect.any(Object),
+        orderBy: { createdAt: 'desc' },
       });
     });
 
@@ -201,12 +205,14 @@ describe('PostsService', () => {
       expect(result[0].topics).toHaveLength(1);
       expect(mockPrismaService.post.findMany).toHaveBeenCalledWith({
         where: {
+          authorId: undefined,
           OR: [
             { title: { contains: 'test' } },
             { content: { contains: 'test' } },
           ],
         },
         include: expect.any(Object),
+        orderBy: { createdAt: 'desc' },
       });
     });
 
@@ -232,6 +238,7 @@ describe('PostsService', () => {
           ],
         },
         include: expect.any(Object),
+        orderBy: { createdAt: 'desc' },
       });
     });
   });
