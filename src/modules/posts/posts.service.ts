@@ -39,9 +39,21 @@ export class PostsService {
     return this.findOne(createdPost.id);
   }
 
-  async findAll(authorId?: string): Promise<PostWithChildren[]> {
+  async findAll(
+    authorId?: string,
+    topicId?: string,
+  ): Promise<PostWithChildren[]> {
     const posts = await this.prisma.post.findMany({
-      where: { authorId },
+      where: {
+        authorId,
+        ...(topicId && {
+          topics: {
+            some: {
+              topicId,
+            },
+          },
+        }),
+      },
       include: postInclude,
     });
 

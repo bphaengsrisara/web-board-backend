@@ -12,12 +12,19 @@ import {
   ForbiddenException,
   NotFoundException,
   Logger,
+  Query,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { AuthenticatedRequest, PostWithChildren } from 'src/interfaces';
 
 @Controller('posts')
@@ -48,9 +55,10 @@ export class PostsController {
   @Get()
   @ApiOperation({ summary: 'Get all posts' })
   @ApiResponse({ status: 200, description: 'Return all posts.' })
-  async findAll() {
+  @ApiQuery({ name: 'topicId', required: false, type: String })
+  async findAll(@Query('topicId') topicId?: string) {
     try {
-      return await this.postsService.findAll();
+      return await this.postsService.findAll(undefined, topicId);
     } catch (error) {
       this.logger.error('Error finding all posts', error);
       throw error;
@@ -61,10 +69,14 @@ export class PostsController {
   @Get('my-posts')
   @ApiOperation({ summary: 'Get all posts by the authenticated user' })
   @ApiResponse({ status: 200, description: 'Return all posts by the user.' })
-  async findAllMyPosts(@Req() req: AuthenticatedRequest) {
+  @ApiQuery({ name: 'topicId', required: false, type: String })
+  async findAllMyPosts(
+    @Req() req: AuthenticatedRequest,
+    @Query('topicId') topicId?: string,
+  ) {
     try {
       const { userId } = req.user;
-      return await this.postsService.findAll(userId);
+      return await this.postsService.findAll(userId, topicId);
     } catch (error) {
       this.logger.error('Error finding user posts', error);
       throw error;

@@ -108,21 +108,62 @@ describe('PostsController', () => {
   });
 
   describe('findAll', () => {
-    it('should return all posts', async () => {
-      const posts = [mockPost];
-      mockPostsService.findAll.mockResolvedValue(posts);
-
+    it('should return all posts without filters', async () => {
+      mockPostsService.findAll.mockResolvedValue([mockPost]);
       const result = await controller.findAll();
-      expect(result).toEqual(posts);
+      expect(result).toEqual([mockPost]);
+      expect(mockPostsService.findAll).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+      );
     });
 
-    it('should handle errors when finding all posts', async () => {
+    it('should return posts filtered by topicId', async () => {
+      mockPostsService.findAll.mockResolvedValue([mockPost]);
+      const result = await controller.findAll('topic1');
+      expect(result).toEqual([mockPost]);
+      expect(mockPostsService.findAll).toHaveBeenCalledWith(
+        undefined,
+        'topic1',
+      );
+    });
+
+    it('should handle error when finding all posts', async () => {
       const error = new Error('Database error');
       mockPostsService.findAll.mockRejectedValue(error);
 
       await expect(controller.findAll()).rejects.toThrow(error);
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Error finding all posts',
+        error,
+      );
+    });
+  });
+
+  describe('findAllMyPosts', () => {
+    it('should return all posts for authenticated user without topic filter', async () => {
+      mockPostsService.findAll.mockResolvedValue([mockPost]);
+      const result = await controller.findAllMyPosts(mockRequest);
+      expect(result).toEqual([mockPost]);
+      expect(mockPostsService.findAll).toHaveBeenCalledWith('user1', undefined);
+    });
+
+    it('should return posts filtered by topicId for authenticated user', async () => {
+      mockPostsService.findAll.mockResolvedValue([mockPost]);
+      const result = await controller.findAllMyPosts(mockRequest, 'topic1');
+      expect(result).toEqual([mockPost]);
+      expect(mockPostsService.findAll).toHaveBeenCalledWith('user1', 'topic1');
+    });
+
+    it('should handle error when finding user posts', async () => {
+      const error = new Error('Database error');
+      mockPostsService.findAll.mockRejectedValue(error);
+
+      await expect(controller.findAllMyPosts(mockRequest)).rejects.toThrow(
+        error,
+      );
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error finding user posts',
         error,
       );
     });
