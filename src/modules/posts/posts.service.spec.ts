@@ -143,7 +143,7 @@ describe('PostsService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all posts when no parameters are provided', async () => {
+    it('should return all posts when no filters are provided', async () => {
       const mockPosts = [mockPostWithRelations];
       mockPrismaService.post.findMany.mockResolvedValue(mockPosts);
 
@@ -157,7 +157,7 @@ describe('PostsService', () => {
       });
     });
 
-    it('should return posts filtered by authorId when provided', async () => {
+    it('should filter posts by authorId', async () => {
       const mockPosts = [mockPostWithRelations];
       mockPrismaService.post.findMany.mockResolvedValue(mockPosts);
 
@@ -171,7 +171,7 @@ describe('PostsService', () => {
       });
     });
 
-    it('should return posts filtered by topicId when provided', async () => {
+    it('should filter posts by topicId', async () => {
       const mockPosts = [mockPostWithRelations];
       mockPrismaService.post.findMany.mockResolvedValue(mockPosts);
 
@@ -191,11 +191,30 @@ describe('PostsService', () => {
       });
     });
 
-    it('should return posts filtered by both authorId and topicId when both provided', async () => {
+    it('should filter posts by search term', async () => {
       const mockPosts = [mockPostWithRelations];
       mockPrismaService.post.findMany.mockResolvedValue(mockPosts);
 
-      const result = await service.findAll('user1', 'topic1');
+      const result = await service.findAll(undefined, undefined, 'test');
+      expect(result).toHaveLength(1);
+      expect(result[0].author).toEqual(mockUser);
+      expect(result[0].topics).toHaveLength(1);
+      expect(mockPrismaService.post.findMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { title: { contains: 'test' } },
+            { content: { contains: 'test' } },
+          ],
+        },
+        include: expect.any(Object),
+      });
+    });
+
+    it('should combine multiple filters', async () => {
+      const mockPosts = [mockPostWithRelations];
+      mockPrismaService.post.findMany.mockResolvedValue(mockPosts);
+
+      const result = await service.findAll('user1', 'topic1', 'test');
       expect(result).toHaveLength(1);
       expect(result[0].author).toEqual(mockUser);
       expect(result[0].topics).toHaveLength(1);
@@ -207,6 +226,10 @@ describe('PostsService', () => {
               topicId: 'topic1',
             },
           },
+          OR: [
+            { title: { contains: 'test' } },
+            { content: { contains: 'test' } },
+          ],
         },
         include: expect.any(Object),
       });

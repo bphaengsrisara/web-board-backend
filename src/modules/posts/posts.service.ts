@@ -42,6 +42,7 @@ export class PostsService {
   async findAll(
     authorId?: string,
     topicId?: string,
+    search?: string,
   ): Promise<PostWithChildren[]> {
     const posts = await this.prisma.post.findMany({
       where: {
@@ -52,6 +53,14 @@ export class PostsService {
               topicId,
             },
           },
+        }),
+        ...(search && {
+          OR: [
+            // use mode:"insensitive" to make search case-insensitive if your db supports it
+            // this is not the case with sqlite
+            { title: { contains: search } },
+            { content: { contains: search } },
+          ],
         }),
       },
       include: postInclude,

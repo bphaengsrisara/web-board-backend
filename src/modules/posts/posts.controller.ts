@@ -53,12 +53,33 @@ export class PostsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all posts' })
-  @ApiResponse({ status: 200, description: 'Return all posts.' })
-  @ApiQuery({ name: 'topicId', required: false, type: String })
-  async findAll(@Query('topicId') topicId?: string) {
+  @ApiOperation({
+    summary: 'Get all posts',
+    description:
+      'Retrieve all posts with optional filtering by topic and search term',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved posts with their associated topics.',
+  })
+  @ApiQuery({
+    name: 'topicId',
+    required: false,
+    type: String,
+    description: 'Filter posts by topic ID',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search posts by title or content',
+  })
+  async findAll(
+    @Query('topicId') topicId?: string,
+    @Query('search') search?: string,
+  ) {
     try {
-      return await this.postsService.findAll(undefined, topicId);
+      return await this.postsService.findAll(undefined, topicId, search);
     } catch (error) {
       this.logger.error('Error finding all posts', error);
       throw error;
@@ -70,13 +91,20 @@ export class PostsController {
   @ApiOperation({ summary: 'Get all posts by the authenticated user' })
   @ApiResponse({ status: 200, description: 'Return all posts by the user.' })
   @ApiQuery({ name: 'topicId', required: false, type: String })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search in title and content',
+  })
   async findAllMyPosts(
     @Req() req: AuthenticatedRequest,
     @Query('topicId') topicId?: string,
+    @Query('search') search?: string,
   ) {
     try {
       const { userId } = req.user;
-      return await this.postsService.findAll(userId, topicId);
+      return await this.postsService.findAll(userId, topicId, search);
     } catch (error) {
       this.logger.error('Error finding user posts', error);
       throw error;
