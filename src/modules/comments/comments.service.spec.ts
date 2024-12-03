@@ -4,6 +4,16 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Comment, Post, User } from '@prisma/client';
 import { CreateCommentDto } from './dto/create-comment.dto';
 
+type MockPrismaService = {
+  comment: {
+    create: jest.Mock;
+  };
+  post: {
+    update: jest.Mock;
+  };
+  $transaction: jest.Mock;
+};
+
 describe('CommentsService', () => {
   let service: CommentsService;
 
@@ -32,10 +42,14 @@ describe('CommentsService', () => {
     updatedAt: new Date(),
   };
 
-  const mockPrismaService = {
+  const mockPrismaService: MockPrismaService = {
     comment: {
       create: jest.fn(),
     },
+    post: {
+      update: jest.fn(),
+    },
+    $transaction: jest.fn((callback) => callback(mockPrismaService)),
   };
 
   beforeEach(async () => {
@@ -69,6 +83,8 @@ describe('CommentsService', () => {
         post: mockPost,
       });
 
+      mockPrismaService.post.update.mockResolvedValue(mockPost);
+
       const result = await service.create(createCommentDto, mockUser.id);
 
       expect(result).not.toBeNull();
@@ -78,6 +94,7 @@ describe('CommentsService', () => {
         expect(result.post).toEqual(mockPost);
       }
 
+      expect(mockPrismaService.$transaction).toHaveBeenCalled();
       expect(mockPrismaService.comment.create).toHaveBeenCalledWith({
         data: {
           content: createCommentDto.content,
@@ -88,6 +105,11 @@ describe('CommentsService', () => {
           author: true,
           post: true,
         },
+      });
+
+      expect(mockPrismaService.post.update).toHaveBeenCalledWith({
+        where: { id: createCommentDto.postId },
+        data: { updatedAt: expect.any(Date) },
       });
     });
   });
