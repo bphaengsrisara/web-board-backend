@@ -1,73 +1,183 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Web Board Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A backend service for the Web Board application, providing REST APIs for managing posts, comments, and user interactions. Built with NestJS and Prisma, this application offers a robust and scalable solution for web forum functionality.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Features
 
-## Description
+- User authentication and authorization
+- CRUD operations for posts and comments
+- Topic categorization for posts
+- Search functionality for posts (title and content)
+- Automatic post timestamp updates on comment activities
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Tech Stack
 
-## Installation
+- **Framework**: [NestJS](https://nestjs.com/) - A progressive Node.js framework
+- **Database**: SQLite with [Prisma](https://www.prisma.io/) ORM
+- **Authentication**: JWT-based with [@nestjs/passport](https://docs.nestjs.com/security/authentication)
+- **API Documentation**: [Swagger/OpenAPI](https://swagger.io/) via @nestjs/swagger
+- **Testing**: Jest and Supertest
+- **Validation**: class-validator and class-transformer
+- **Code Quality**: ESLint and Prettier
 
-```bash
-$ yarn install
-```
+## Prerequisites
 
-## Running the app
+- Node.js (v20 or higher)
+- yarn package manager
+- SQLite (created during migration)
+
+## Installation and Setup
+
+1. Clone the repository:
 
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+git clone https://github.com/bphaengsrisara/web-board-backend.git
+cd web-board-backend
 ```
 
-## Test
+2. Install dependencies:
 
 ```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
+yarn
 ```
 
-## Support
+3. Set up environment variables:
+   - set your environment variables in the `.env` file or use default values
+   - Configure the following variables:
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```env
+PORT=8000
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="your-secure-jwt-secret"
+```
 
-## Stay in touch
+4. Initialize the database:
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+# Generate Prisma client
+npx prisma generate
 
-## License
+# Run migrations
+npx prisma migrate deploy
 
-Nest is [MIT licensed](LICENSE).
+# (Optional) Seed the database
+yarn seed
+```
+
+## Running the Application
+
+### Development Mode
+
+```bash
+# Start the development server with hot-reload
+yarn start:dev
+
+# Access Swagger documentation at http://localhost:8000/api/docs
+```
+
+### Production Mode
+
+```bash
+# Build the application
+yarn build
+
+# Start the production server
+yarn start:prod
+```
+
+## Testing
+
+```bash
+# Run unit tests
+yarn test
+
+# Run tests in watch mode
+yarn test:watch
+
+# Generate test coverage report
+yarn test:cov
+```
+
+## Project Structure
+
+```
+web-board-backend/
+├── src/                    # Source code
+│   ├── modules/           # Feature modules
+│   │   ├── auth/         # Authentication
+│   │   ├── users/        # User management
+│   │   ├── posts/        # Post management
+│   │   ├── comments/     # Comment management
+│   │   └── topics/       # Topic management
+│   ├── prisma/           # Prisma service and client
+│   ├── interfaces/       # TypeScript interfaces
+│   ├── app.module.ts     # Root application module
+│   └── main.ts          # Application entry point
+├── prisma/               # Database configuration
+│   ├── migrations/      # Database migrations
+│   ├── schema.prisma    # Prisma schema
+│   └── seed.ts         # Database seeding
+├── test/                # End-to-end tests
+├── node_modules/        # Dependencies
+├── package.json        # Project metadata and dependencies
+├── tsconfig.json      # TypeScript configuration
+├── .env              # Environment variables
+├── .eslintrc.js     # ESLint configuration
+└── .prettierrc      # Prettier configuration
+```
+
+## API Documentation
+
+When running in development mode, access the Swagger documentation at:
+
+```
+http://localhost:8000/api/docs
+```
+
+### Key Endpoints
+
+#### Authentication
+
+- POST `/auth/sign-in` - User sign in
+- POST `/auth/sign-out` - User sign out
+
+#### Posts
+
+- GET `/posts` - Get all posts (supports search and topic filtering)
+- GET `/posts/my-posts` - Get posts by authenticated user
+- POST `/posts` - Create a new post
+- PATCH `/posts/:id` - Update a post
+- DELETE `/posts/:id` - Delete a post
+
+#### Topics
+
+- GET `/topics` - Get all topics
+
+#### Comments
+
+- GET `/posts/:id/comments` - Get comments for a post
+- POST `/posts/:id/comments` - Add a comment to a post
+- PATCH `/comments/:id` - Update a comment
+- DELETE `/comments/:id` - Delete a comment
+
+## Architecture Overview
+
+The application follows NestJS's modular architecture:
+
+- **Controllers**: Handle HTTP requests and define API endpoints
+- **Services**: Implement business logic and database operations
+- **DTOs**: Define data transfer objects for request/response validation
+- **Guards**: Implement authentication and authorization
+- **Modules**: Organize related components and define dependencies
+
+Key architectural decisions:
+
+- Use of Prisma transactions for data consistency
+- JWT-based stateless authentication
+- Automatic post timestamp updates on comment modifications
+- Environment-based Swagger documentation
+- Comprehensive error handling and validation
+
+## Feedback
+
+We value your input! If you have any questions, suggestions, or feedback about this project, please feel free to reach out to us at bovonrajt.p@gmail.com. Your insights are crucial in helping us improve and enhance the Web Board Backend.
