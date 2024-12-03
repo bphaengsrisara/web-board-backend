@@ -65,7 +65,7 @@ export class PostsService {
       },
       include: postInclude,
       orderBy: {
-        createdAt: 'desc',
+        updatedAt: 'desc',
       },
     });
 
@@ -143,6 +143,9 @@ const postInclude = {
   comments: {
     include: {
       author: true,
+    },
+    orderBy: {
+      updatedAt: 'desc',
     },
   },
 } satisfies Prisma.PostInclude;
